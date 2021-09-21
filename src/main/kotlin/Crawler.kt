@@ -14,10 +14,9 @@ class Crawler(private val protocol: String, private val domain: String, private 
     private suspend fun tryAdd(inputUrl: String) {
         val url = fixUrl(inputUrl.split("#")[0])
         if (((!onlyMainDomain && url.contains(Regex("^$protocol://[^/]*$domain")))
-                || (onlyMainDomain && url.contains(Regex("^$protocol://$domain"))))
+                    || (onlyMainDomain && url.contains(Regex("^$protocol://$domain"))))
             && !url.contains("#") && used[url] != true
-        )
-        {
+        ) {
             used[url] = true
             queue.send(url)
         }
@@ -64,7 +63,7 @@ class Crawler(private val protocol: String, private val domain: String, private 
                 } catch (e: Exception) {
                     println(e)
                 } finally {
-                        permits.release()
+                    permits.release()
                 }
             }
         }
