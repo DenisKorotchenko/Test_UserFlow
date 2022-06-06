@@ -11,7 +11,7 @@ class Crawler(private val protocol: String, private val domain: String, private 
     private val queue = Channel<String>(Channel.Factory.UNLIMITED)
     private val used = ConcurrentHashMap<String, Boolean>()
 
-    private suspend fun tryAdd(inputUrl: String) {
+    private suspend fun tryAdd(inputUrl: String): Boolean {
         val url = fixUrl(inputUrl.split("#")[0])
         if (((!onlyMainDomain && url.contains(Regex("^$protocol://[^/]*$domain")))
                     || (onlyMainDomain && url.contains(Regex("^$protocol://$domain"))))
@@ -19,7 +19,9 @@ class Crawler(private val protocol: String, private val domain: String, private 
         ) {
             used[url] = true
             queue.send(url)
+            return true
         }
+        return false
     }
 
     private fun fixUrl(url: String): String {
@@ -27,9 +29,10 @@ class Crawler(private val protocol: String, private val domain: String, private 
             .replace(Regex("^.*://"), "$protocol://")
             .replace(Regex("[^:/]/+")) { p -> p.value[0] + "/" }
             .replace(Regex("^$protocol://www[.]"), "$protocol://")
+            .replace(Regex("/$"), "")
     }
 
-    suspend fun run(numPermits: Int) {
+    suspend fun run(numPermits: Int, printToScreen: Boolean = true) {
         var i = 0
         used.clear()
         lists.clear()
@@ -50,7 +53,8 @@ class Crawler(private val protocol: String, private val domain: String, private 
             GlobalScope.launch {
                 try {
                     val list = mutableListOf<String>()
-                    println("$i $currentUrl")
+                    if (printToScreen)
+                        println("$i $currentUrl")
                     i++
                     val html = Jsoup.connect(currentUrl).ignoreHttpErrors(true).get()
                     for (a in html.select("a")) {
